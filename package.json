@@ -8,7 +8,7 @@
     "dev": "npx nodemon client.js"
   },
   "author": "laisoJS - LIKECreep",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "description": "",
   "dependencies": {
     "discord.js": "^14.14.1",
