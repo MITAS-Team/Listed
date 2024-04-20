@@ -7,17 +7,17 @@ module.exports = {
 
         // Send console message if connected to mongoDB
         mongoose.connection.on("connected", () => {
-            console.log("[mongoDB]: connected");
+            console.log("\x1b[92m[mongoDB]: connected\x1b[0m");
         });
 
         // Send console message if mongoDB is disconected
         mongoose.connection.on("disconnected",() => {
-            console.log("[mongoDB]: disconnected");
+            console.log("\x1b[31m[mongoDB]: disconnected\x1b[0m");
         });
 
         // Send error message if connection 
         mongoose.connection.on("error", (error) => {
-            console.log("[mongoDB]: An error occured", error);
+            console.log("\x1b[31m[mongoDB]: An error occured\x1b[0m", error);
         });
     },
 };
