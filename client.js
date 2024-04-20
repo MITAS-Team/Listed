@@ -1,16 +1,33 @@
+// import env variable
 require('dotenv').config();
-const { token } = process.env;
+const { token, connect } = process.env;
 
-const fs = require('node:fs');
-const path = require('node:path');
+// Initialize the connection to mongoDB
+require('./database/mongOption.js').init(connect);
+
+
+/*
+    Creating the client
+*/
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.commands = new Collection();
 client.coolDown = new Collection();
+
+
+/*
+    Events and Commands handler 
+*/
+const fs = require('node:fs');
+const path = require('node:path');
+const { error } = require('node:console');
+
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
 for (const folder of commandFolders) {
     const commandsPath = path.join(foldersPath, folder);
@@ -26,9 +43,6 @@ for (const folder of commandFolders) {
     }
 }
 
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
 for (const file of eventFiles) {
     const filePath = path.join(eventsPath, file);
     const event = require(filePath);
@@ -39,4 +53,6 @@ for (const file of eventFiles) {
     }
 }
 
+
+// Login the client
 client.login(token);
