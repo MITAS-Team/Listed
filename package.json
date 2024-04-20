@@ -1,0 +1,17 @@
+{
+  "name": "listed",
+  "version": "0.0.1",
+  "main": "client.js",
+  "scripts": {
+    "test": "node client.js",
+    "deploy": "node deploy-commands.js",
+    "dev": "npx nodemon client.js"
+  },
+  "author": "laisoJS - LIKECreep",
+  "license": "MIT",
+  "description": "",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5"
+  }
+}
