@@ -47,7 +47,6 @@ module.exports = {
 			console.log(`Successfully reloaded ${data.length} application (/) commands.`);
 		} catch (error) {
 			console.error(error);
-		}
-
-	}
-}
+		};
+	},
+};
