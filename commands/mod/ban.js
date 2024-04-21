@@ -5,13 +5,23 @@ module.exports = {
         .setName('ban')
         .setDescription('Ban a user from the server.')
         .addUserOption(option =>
-            option.setName('user')
+            option
+                .setName('user')
                 .setDescription('The user to ban.')
-                .setRequired(true))
+                .setRequired(true)
+        )
         .addStringOption(option =>
-            option.setName('reason')
+            option
+                .setName('reason')
                 .setDescription('The reason for banning the user.')
-                .setRequired(false)),
+                .setRequired(false)
+        )
+        .addBooleanOption(option =>
+            option
+                .setName('delete-messages')
+                .setDescription('Delete all messages sent by the user before banning.')
+                .setRequired(false)
+        ),
     async execute(interaction) {
         // Check if the user invoking the command has the necessary permissions
         if (!interaction.member.permissions.has('BAN_MEMBERS')) {
@@ -22,8 +32,23 @@ module.exports = {
         const user = interaction.options.getMember('user');
         // Get the reason for banning the user from the interaction options
         const reason = interaction.options.getString('reason') || 'No reason provided';
+        // Get the option value to delete messages
+        const deleteMessages = interaction.options.getBoolean('delete-messages') || false;
 
         try {
+            if (deleteMessages) {
+                interaction.guild.channels.cache.forEach(async (channel) => {
+                    if (channel.type === 0) {
+                        try {
+                            const messages = await channel.messages.fetch({ limit: 100 });
+                            const userMessages = messages.filter(msg => msg.author.id === user.id);
+                            await channel.bulkDelete(userMessages, true);
+                        } catch (error) {
+                            console.error(error);
+                        }
+                    }
+                });
+            }
             // Ban the user from the server
             await interaction.guild.members.ban(user, { reason });
 
