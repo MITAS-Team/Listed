@@ -46,7 +46,7 @@ module.exports = {
 
         const blacklistedUser = await Blacklist.findOne({ 'user.ID': user }),
             whitelistedUser = await Whitelist.findOne({ 'user.ID': user }),
-            redlistedUser = await Redlist.findOne({ 'user.ID': user })
+            redlistedUser = await Redlist.findOne({ 'user.ID': user });
 
 
         switch (listType) {
@@ -68,15 +68,16 @@ module.exports = {
 
                         await interaction.reply({
                             content: `<@${user}> is removed from the blacklist`,
+                            files: ['src/yuhuh.gif'],
                             ephemeral: true
                         });
 
-                        await interaction.guild.bans.remove(user)
+                        await interaction.guild.bans.remove(user);
                     }
                 } catch (error) {
-                    console.error('Error removing user to blacklist:', error);
+                    console.error('Error removing user from blacklist:', error);
                     await interaction.reply({
-                        content: 'An error occurred while removing the user to the blacklist.',
+                        content: 'An error occurred while removing the user from the blacklist.',
                         ephemeral: true
                     });
                 }
@@ -86,11 +87,57 @@ module.exports = {
                 Whitelist
             */
             case 'whitelist':
+                try {
+                    if (!whitelistedUser) {
+                        await interaction.reply({
+                            content: `The user you provided is not in the whitelist`,
+                            ephemeral: true
+                        });
+                    } else {
+                        await Whitelist.findOneAndDelete({
+                            'user.ID': user
+                        });
+                        
+                        await interaction.reply({
+                            content: `<@${user}> is removed from the whitelist`,
+                            ephemeral: true
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error removing user from whitelist:', error)
+                    await interaction.reply({
+                        content: 'An error occurred while removing the user from the whitelist',
+                        ephemeral: true
+                    });
+                }
                 break;
             /*
                 Redlist
             */
             case 'redlist':
+                try {
+                    if (!redlistedUser) {
+                        await interaction.reply({
+                            content: `The user you provided is not in the redlist`,
+                            ephemeral: true
+                        });
+                    } else {
+                        await Redlist.findOneAndDelete({
+                            'user.ID': user
+                        });
+                        
+                        await interaction.reply({
+                            content: `<@${user}> is removed from the redlist`,
+                            ephemeral: true
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error removing user from redlist:', error)
+                    await interaction.reply({
+                        content: 'An error occurred while removing the user from the redlist',
+                        ephemeral: true
+                    });
+                }
                 break;
             default:
                 return await interaction.reply({
