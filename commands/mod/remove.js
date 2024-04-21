@@ -44,9 +44,9 @@ module.exports = {
             reason = interaction.options.getString('reason'),
             listType = interaction.options.getString('list');
 
-        const blacklistedUser = Blacklist.findOne({ 'user.ID': user }),
-            whitelistedUser = Whitelist.findOne({ 'user.ID': user }),
-            redlistedUser = Redlist.findOne({ 'user.ID': user })
+        const blacklistedUser = await Blacklist.findOne({ 'user.ID': user }),
+            whitelistedUser = await Whitelist.findOne({ 'user.ID': user }),
+            redlistedUser = await Redlist.findOne({ 'user.ID': user })
 
 
         switch (listType) {
@@ -70,6 +70,8 @@ module.exports = {
                             content: `<@${user}> is removed from the blacklist`,
                             ephemeral: true
                         });
+
+                        await interaction.guild.bans.remove(user)
                     }
                 } catch (error) {
                     console.error('Error removing user to blacklist:', error);
