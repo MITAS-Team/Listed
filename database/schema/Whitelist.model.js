@@ -16,7 +16,6 @@ const Whitelist = new Schema({
             // User ID
             type: String,
             required: true,
-            unique: true
         },
         Tag: {
             // User Tag
