@@ -1,10 +1,10 @@
 {
   "name": "listed",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "main": "client.js",
   "scripts": {
     "test": "node client.js",
-    "deploy": "node deploy-commands.js",
+    "start": "node client.js",
     "dev": "npx nodemon client.js"
   },
   "author": "laisoJS - LIKECreep",
