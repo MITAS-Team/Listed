@@ -1,6 +1,6 @@
 const { Schema, model } = require("mongoose");
 
-const Blacklist = new Schema({
+const Whitelist = new Schema({
     executedBy: {
         ID: {
             type: String,
@@ -35,4 +35,4 @@ const Blacklist = new Schema({
     }
 });
 
-module.exports = model('Blacklist', Blacklist);
+module.exports = model('Whitelist', Whitelist);
