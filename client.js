@@ -17,28 +17,40 @@ const client = new Client({
 });
 
 client.commands = new Collection();
-/*
-    Connect to the database
-    @param {String} connect - The mongodb connection URI
-*/
-require('./database/mongOption.js').init(connect);
-
-// Deploy the commands
-require('./handler/deploy-commands.js').init();
 
 /*
-    Initialize the commands and events handlers
-    @param {Client} client - The discord client
-    @param {Boolean} DEBUG_MODE - Print events and commands loaded
+    Asynchronous function to initialyze :
+    - The database connection
+    - Deploy the commands
+    - The commands and events handlers
+
 */
-const DEBUG_MODE = true; // Print events and commands loaded
-require('./handler/commands.js').init(client, DEBUG_MODE);
-require('./handler/events.js').init(client, DEBUG_MODE);
+const Initialize = async () => {
+    /*
+        Connect to the database
+        @param {String} connect - The mongodb connection URI
+    */
+    await require('./database/mongOption.js').init(connect);
+
+    // Deploy the commands
+    await require('./handler/deploy-commands.js').init();
+
+    /*
+        Initialize the commands and events handlers
+        @param {Client} client - The discord client
+        @param {Boolean} DEBUG_MODE - Print events and commands loaded
+    */
+    const DEBUG_MODE = false; // Print events and commands loaded
+    await require('./handler/commands.js').init(client, DEBUG_MODE);
+    await require('./handler/events.js').init(client, DEBUG_MODE);
+
+    await client.login(token);
+}
 
 
 try {
-    // Login the client
-    client.login(token);
+    // call the Initialize function
+    Initialize();
 } catch (error) {
     console.error('[client]: Error logging in:', error);
 }
