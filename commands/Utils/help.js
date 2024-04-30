@@ -6,12 +6,18 @@ const path = require('path');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('help')
-        .setDescription('Show all available commands.'),
+        .setDescription('Show all available commands.')
+        .addStringOption(option =>
+            option
+                .setName('command')
+                .setDescription('The command to get help for.')
+                .setRequired(false)
+        ),
     async execute(interaction) {
         try {
-            // Get the path to the commands folder
+            const commandHelp = interaction.options.getString('command');
+
             const commandsPath = path.join(__dirname, '..', '..', 'commands');
-            // Get all the folders in the commands folder
             const commandFolders = fs.readdirSync(commandsPath);
 
             // Create an object to store categories and commands
@@ -34,27 +40,58 @@ module.exports = {
                 }
             }
 
-            // Prepare the embed
-            const embed = new EmbedBuilder()
-                .setTitle('Help')
-                .setDescription('Here are the available commands:');
-
-            // Add fields for each category
-            for (const category in commandsByCategory) {
-                const commands = commandsByCategory[category];
-                const commandNames = commands.map(command => `\`${command.name}\``).join('\n');
-                const commandDescriptions = commands.map(command => command.description).join('\n');
-
-                embed.addFields({
-                    name: category,
-                    value: commandNames,
-                    inline: true,
-                });
+            if (commandHelp) {
+                // Find the command by name
+                let foundCommand;
+                let usage = '';
+                let commandFound = false; // Flag to check if command is found
+                for (const category in commandsByCategory) {
+                    const commands = commandsByCategory[category];
+                    // Find the command in the category
+                    foundCommand = commands.find(command => command.name === commandHelp);
+                    if (foundCommand) {
+                        // Construct the usage string based on the command options and whether they are required or not
+                        usage = `/${foundCommand.name} ${foundCommand.options.map(option => option.required ? `<${option.name}>` : `[${option.name}]`).join(' ')}`;
+                        const embed = new EmbedBuilder()
+                            .setTitle('Help')
+                            .setDescription(`Help for the ${commandHelp} command:`)
+                            .addFields(
+                                { name: 'Description', value: foundCommand.description || 'No description available' },
+                                { name: 'Usage', value: `\`${usage}\`\n<> = required, [] = optional` },
+                            )
+                            .setColor('DarkGreen');
+                        
+                        await interaction.reply({ embeds: [embed] });
+                        commandFound = true; // Set flag to true
+                        break; // Exit loop once command is found
+                    }
+                }
+            
+                // If the command is not found in any category, send a message
+                if (!commandFound) {
+                    await interaction.reply({ content: `Command \`${commandHelp}\` not found.`, ephemeral: true });
+                }
+            } else {
+                // Prepare the embed
+                const embed = new EmbedBuilder()
+                    .setTitle('Help')
+                    .setDescription('Here are the available commands:')
+                    .setColor('DarkGreen');
+            
+                // Add fields for each category
+                for (const category in commandsByCategory) {
+                    const commands = commandsByCategory[category];
+                    const commandNames = commands.map(command => `${command.name}`).join('\n');
+                
+                    embed.addFields({
+                        name: category,
+                        value: commandNames,
+                        inline: true,
+                    });
+                }
+            
+                await interaction.reply({ embeds: [embed] });
             }
-
-            // Set embed color and send the message
-            embed.setColor('DarkGreen');
-            await interaction.reply({ embeds: [embed] });
         } catch (error) {
             console.error('[help]: Error executing command:', error);
             await interaction.reply({ content: 'An error occurred while executing this command.', ephemeral: true }); 
