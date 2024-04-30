@@ -2,6 +2,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const { findBestMatch } = require('string-similarity'); // Import the string-similarity module
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -25,7 +26,9 @@ module.exports = {
 
             // Loop through each folder and get the JavaScript files in each folder
             for (const folder of commandFolders) {
-                const commandFiles = fs.readdirSync(path.join(commandsPath, folder)).filter(file => file.endsWith('.js'));
+                const commandFiles = fs
+                    .readdirSync(path.join(commandsPath, folder))
+                    .filter(file => file.endsWith('.js'));
                 for (const file of commandFiles) {
                     const command = require(path.join(commandsPath, folder, file));
                     // Check if the command has a data property
@@ -52,12 +55,13 @@ module.exports = {
                     if (foundCommand) {
                         // Construct the usage string based on the command options and whether they are required or not
                         usage = `/${foundCommand.name} ${foundCommand.options.map(option => option.required ? `<${option.name}>` : `[${option.name}]`).join(' ')}`;
+                        
                         const embed = new EmbedBuilder()
                             .setTitle('Help')
                             .setDescription(`Help for the ${commandHelp} command:`)
                             .addFields(
                                 { name: 'Description', value: foundCommand.description || 'No description available' },
-                                { name: 'Usage', value: `\`${usage}\`\n<> = required, [] = optional` },
+                                { name: 'Usage', value: `\`${usage}\` \n <> = required, [] = optional` },
                             )
                             .setColor('DarkGreen');
                         
@@ -66,16 +70,20 @@ module.exports = {
                         break; // Exit loop once command is found
                     }
                 }
-            
-                // If the command is not found in any category, send a message
+                
+                // If the command is not found in any category, find the closest matching command
                 if (!commandFound) {
-                    await interaction.reply({ content: `Command \`${commandHelp}\` not found.`, ephemeral: true });
+                    const allCommands = Object.values(commandsByCategory).flatMap(commands => commands);
+                    const matches = findBestMatch(commandHelp, allCommands.map(command => command.name));
+                    const closestMatch = matches.bestMatch.target;
+                    
+                    await interaction.reply({ content: `Command \`${commandHelp}\` not found. Did you mean: \`${closestMatch}\`?`, ephemeral: true });
                 }
             } else {
                 // Prepare the embed
                 const embed = new EmbedBuilder()
                     .setTitle('Help')
-                    .setDescription('Here are the available commands:')
+                    .setDescription('List of the available commands:')
                     .setColor('DarkGreen');
             
                 // Add fields for each category
