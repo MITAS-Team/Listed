@@ -37,14 +37,14 @@ module.exports = {
 		}
 
 		try {
-			console.log(`Started refreshing ${commands.length} application (/) commands.`);
+			console.log(`\x1b[35m[handler]: Started refreshing ${commands.length} commands.\x1b[0m`);
 
 			const data = await rest.put(
 				Routes.applicationCommands(clientId),
 				{ body: commands },
 			);
 	
-			console.log(`Successfully reloaded ${data.length} application (/) commands.`);
+			console.log(`\x1b[35m[handler]: Successfully reloaded ${data.length} commands.\x1b[0m`);
 		} catch (error) {
 			console.error(error);
 		};
