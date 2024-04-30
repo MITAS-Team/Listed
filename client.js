@@ -26,12 +26,6 @@ client.commands = new Collection();
 
 */
 const Initialize = async () => {
-    /*
-        Connect to the database
-        @param {String} connect - The mongodb connection URI
-    */
-    await require('./database/mongOption.js').init(connect);
-
     // Deploy the commands
     await require('./handler/deploy-commands.js').init();
 
@@ -40,9 +34,15 @@ const Initialize = async () => {
         @param {Client} client - The discord client
         @param {Boolean} DEBUG_MODE - Print events and commands loaded
     */
-    const DEBUG_MODE = false; // Print events and commands loaded
+    const DEBUG_MODE = true; // Print events and commands loaded
     await require('./handler/commands.js').init(client, DEBUG_MODE);
     await require('./handler/events.js').init(client, DEBUG_MODE);
+
+    /*
+        Connect to the database
+        @param {String} connect - The mongodb connection URI
+    */
+        await require('./database/mongOption.js').init(connect);
 
     await client.login(token);
 }
