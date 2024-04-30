@@ -7,6 +7,10 @@ const Guild = new Schema({
         unique: true
     },
     Settings: {
+        Logs: {
+            type: Boolean,
+            default: false
+        },
         LogChannel: {
             type: String,
             required: true
