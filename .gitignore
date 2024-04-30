@@ -1,5 +1,43 @@
-node_modules/
+# package
+node_modules
 
+# Env file
 .env
 
+# Logs files
+Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# IDE
+.idead
+.vscode
+.DS_Store
+
+# node
 package-lock.json
+
+# Deno
+deno.lock
+
+# Bun
+bun.lockb
+
+# yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Cache
+.prettiercache
+.eslintcache
+.vercel
