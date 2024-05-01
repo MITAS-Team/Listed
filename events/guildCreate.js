@@ -24,10 +24,9 @@ module.exports = {
                 const welcomeMessage = new EmbedBuilder()
                     .setTitle('Welcome to the Server!')
                     .setDescription('Thank you for inviting me to your server.')
-                    .addFields({ 
-                        name: 'Instructions', 
-                        value: 'Please configure the server settings by typing a specific command or visiting a specific channel.' 
-                    })
+                    .addFields(
+                        { name: 'You can have all the commands by typing:', value: '/help' }
+                    )
                     .setColor('Green')
                     .setTimestamp();
         
