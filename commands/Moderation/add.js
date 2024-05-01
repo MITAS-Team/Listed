@@ -1,5 +1,5 @@
-const { SlashCommandBuilder } = require('discord.js');
-const Blacklist = require('../../database/schema/Blacklist.model.js'),
+const { SlashCommandBuilder, PermissionsBitField } = require('discord.js');
+const Blacklist = require('../../database/schema/Blacklist.model.js',),
     Whitelist = require('../../database/schema/Whitelist.model.js'),
     Redlist = require('../../database/schema/Redlist.model.js');
 
@@ -32,7 +32,7 @@ module.exports = {
         ),
     async execute(interaction) {
         // Check if the user executing the command is an administrator
-        if (!interaction.member.permissions.has("ADMINISTRATOR")) {
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return await interaction.reply({
                 content: 'You must be an administrator to use this command.',
                 ephemeral: true
@@ -45,161 +45,258 @@ module.exports = {
             listType = interaction.options.getString('list');
 
         const blacklistedUser = await Blacklist.findOne({ userID: user.id }),
-            whitelistedUser = await Whitelist.findOne({ 'user.ID': user.id }),
+            whitelistedUser = await Whitelist.findOne({ userID: user.id }),
             redlistedUser = await Redlist.findOne({ userID: user.id });
 
-        switch (listType) {
-            /*
-                Blacklist
-            */
-            case 'blacklist':
-                // Add user to the blacklist
-                try {
-                    // Check if the user is already blacklisted
-                    if (blacklistedUser) {
-                        return await interaction.reply({
-                            content: `<@${user.id}> is already in the blacklist.`,
+        try {
+            switch (listType) {
+                /*
+                    Blacklist
+                */
+                case 'blacklist':
+                    // Add user to the blacklist
+                    try {
+                        if (whitelistedUser && whitelistedUser.guilds.find((guild) => guild.ID === interaction.guild.id)) {
+                            return await interaction.reply({
+                                content: `<@${user.id}> is already in the whitelist and cannot be added to the blacklist.`,
+                                ephemeral: true
+                            });
+                        }
+
+                        if (!blacklistedUser) {
+                            const newBlacklistedUser = new Blacklist({
+                                userID: user.id,
+                                guilds: [{
+                                    ID: interaction.guild.id,
+                                    reason: reason,
+                                    executedBy: interaction.user.id
+                                }],
+                            });
+
+                            await newBlacklistedUser
+                                .save()
+                                .then(() => {
+                                    interaction.reply({
+                                        content: `<@${user.id}> has been added to the blacklist. Reason: ${reason}`,
+                                        ephemeral: true
+                                    });
+                                })
+                                .catch((error) => {
+                                    console.error('Error adding user to blacklist:', error);
+                                    interaction.reply({
+                                        content: 'An error occurred while adding the user to the blacklist.',
+                                        ephemeral: true
+                                    });
+                                });
+
+                            return;
+                        } else if (blacklistedUser.guilds.find((guild) => guild.ID === interaction.guild.id)) {
+                            return await interaction.reply({
+                                content: `<@${user.id}> is already in the blacklist.`,
+                                ephemeral: true
+                            });
+                        } else {
+                            blacklistedUser.guilds.push({
+                                ID: interaction.guild.id,
+                                reason: reason,
+                                executedBy: interaction.user.id
+                            });
+
+                            await blacklistedUser
+                                .save()
+                                .then(() => {
+                                    interaction.reply({
+                                        content: `<@${user.id}> has been added to the blacklist. Reason: ${reason}`,
+                                        ephemeral: true
+                                    });
+                                })
+                                .catch((error) => {
+                                    console.error('Error adding user to blacklist:', error);
+                                    interaction.reply({
+                                        content: 'An error occurred while adding the user to the blacklist.',
+                                        ephemeral: true
+                                    });
+                                });
+                            try {
+                                interaction.guild.members.ban(user.id, { reason: reason });
+                            } catch (error) {
+                                interaction.reply({
+                                    content: 'An error occurred while banning the blacklisted user.',
+                                    ephemeral: true
+                                });
+                            }
+                            
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error adding user to blacklist:', error);
+                        await interaction.reply({
+                            content: 'An error occurred while adding the user to the blacklist.',
                             ephemeral: true
                         });
-                    };
+                        return;
+                    }
+                    break;
 
-                    if (whitelistedUser) {
-                        return await interaction.reply({
-                            content: `<@${user.id}> is in the whitelist and cannot be blacklisted.`,
+                /*
+                    Whitelist
+                */
+                case 'whitelist':
+                    // Add user to the whitelist
+                    try {
+                        if (blacklistedUser && blacklistedUser.guilds.find((guild) => guild.ID === interaction.guild.id)) {
+                            return await interaction.reply({
+                                content: `<@${user.id}> is already in the blacklist and cannot be added to the whitelist.`,
+                                ephemeral: true
+                            });
+                        }
+
+                        if (!whitelistedUser) {
+                            const newWhitelistedUser = new Whitelist({
+                                userID: user.id,
+                                guilds: [{
+                                    ID: interaction.guild.id,
+                                    reason: reason,
+                                    executedBy: interaction.user.id
+                                }]
+                            });
+
+                            await newWhitelistedUser
+                                .save()
+                                .then(() => {
+                                    interaction.reply({
+                                        content: `<@${user.id}> has been added to the whitelist. Reason: ${reason}`,
+                                        ephemeral: true
+                                    });
+                                })
+                                .catch((error) => {
+                                    console.error('Error adding user to whitelist:', error);
+                                    interaction.reply({
+                                        content: 'An error occurred while adding the user to the whitelist.',
+                                        ephemeral: true
+                                    });
+                                });
+                            return;
+                        } else if (whitelistedUser.guilds.find((guild) => guild.ID === interaction.guild.id)) {
+                            return await interaction.reply({
+                                content: `<@${user.id}> is already in the whitelist.`,
+                                ephemeral: true
+                            });
+                        } else {
+                            whitelistedUser.guilds.push({
+                                ID: interaction.guild.id,
+                                reason: reason,
+                                executedBy: interaction.user.id
+                            });
+
+                            await whitelistedUser
+                                .save()
+                                .then(() => {
+                                    interaction.reply({
+                                        content: `<@${user.id}> has been added to the whitelist. Reason: ${reason}`,
+                                        ephemeral: true
+                                    });
+                                })
+                                .catch((error) => {
+                                    console.error('Error adding user to whitelist:', error);
+                                    interaction.reply({
+                                        content: 'An error occurred while adding the user to the whitelist.',
+                                        ephemeral: true
+                                    });
+                                });
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error adding user to whitelist:', error);
+                        await interaction.reply({
+                            content: 'An error occurred while adding the user to the whitelist.',
                             ephemeral: true
                         });
-                    };
+                        return;
+                    }
+                    break;
+                /*
+                    Redlist
+                */
+                case 'redlist':
+                    try {
+                        if (!redlistedUser) {
+                            const newRedlistedUser = new Redlist({
+                                userID: user.id,
+                                guilds: [{
+                                    ID: interaction.guild.id,
+                                    reason: reason,
+                                    executedBy: interaction.user.id
+                                }],
+                            });
 
-                    // Create a new user in the blacklist
-                    const newUser = new Blacklist({
-                        executedBy: {
-                            ID: interaction.user.id,
-                            Tag: interaction.user.tag
-                        },
-                        user: {
-                            ID: user.id,
-                            Tag: user.user.tag
+                            await newRedlistedUser
+                                .save()
+                                .then(() => {
+                                    interaction.reply({
+                                        content: `<@${user.id}> has been added to the redlist. Reason: ${reason}`,
+                                        ephemeral: true
+                                    });
+                                })
+                                .catch((error) => {
+                                    console.error('Error adding user to redlist:', error);
+                                    interaction.reply({
+                                        content: 'An error occurred while adding the user to the redlist.',
+                                        ephemeral: true
+                                    });
+                                });
 
-                        },
-                        reason: reason
-                    });
-                    await newUser.save();
-                    await interaction.reply({
-                        content: `<@${user.id}> has been added to the blacklist. Reason: ${reason}`,
-                        ephemeral: true
-                    });
+                            return;
+                        } else if (redlistedUser.guilds.find((guild) => guild.ID === interaction.guild.id)) {
+                            return await interaction.reply({
+                                content: `<@${user.id}> is already in the redlist.`,
+                                ephemeral: true
+                            });
+                        } else {
+                            redlistedUser.guilds.push({
+                                ID: interaction.guild.id,
+                                reason: reason,
+                                executedBy: interaction.user.id
+                            });
 
-                    // Send the user the reason why he was blacklisted
-                    await user.send({
-                        content: `You have been blacklisted from ${interaction.guild.name}.\nReason: ${reason}`,
-                        files: ["src/nuhuh.gif"]
-                    });
+                            await redlistedUser
+                                .save()
+                                .then(() => {
+                                    interaction.reply({
+                                        content: `<@${user.id}> has been added to the redlist. Reason: ${reason}`,
+                                        ephemeral: true
+                                    });
+                                })
+                                .catch((error) => {
+                                    console.error('Error adding user to redlist:', error);
+                                    interaction.reply({
+                                        content: 'An error occurred while adding the user to the redlist.',
+                                        ephemeral: true
+                                    });
+                                });
 
-                    // Ban the blacklisted user
-                    await interaction.guild.members.ban(user, { reason: reason });
-                } catch (error) {
-                    console.error('Error adding user to blacklist:', error);
-                    await interaction.reply({
-                        content: 'An error occurred while adding the user to the blacklist.',
-                        ephemeral: true
-                    });
-                }
-                break;
-
-            /*
-                Whitelist
-            */
-            case 'whitelist':
-                // Add user to the whitelist
-                try {
-                    // Check if the user is already whitelisted
-                    if (whitelistedUser) {
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error adding user to redlist:', error);
                         return await interaction.reply({
-                            content: `<@${user.id}> is already in the whitelist.`,
-                            ephemeral: true
-                        });
-                    };
-
-                    if (blacklistedUser) {
-                        return await interaction.reply({
-                            content: `<@${user.id}> is already in the blacklist.`,
+                            content: 'An error occurred while adding the user to the redlist.',
                             ephemeral: true
                         });
                     }
-
-                    // Create a new user in the whitelist
-                    const newUser = new Whitelist({
-                        executedBy: {
-                            ID: interaction.user.id,
-                            Tag: interaction.user.tag
-                        },
-                        user: {
-                            ID: user.id,
-                            Tag: user.user.tag
-
-                        },
-                        reason: reason
-                    });
-
-                    await newUser.save();
-                    await interaction.reply({
-                        content: `<@${user.id}> has been added to the whitelist. Reason: ${reason}`,
-                        ephemeral: true
-                    });
-                } catch (error) {
-                    console.error('Error adding user to whitelist:', error);
+                    break;
+                default:
                     return await interaction.reply({
-                        content: 'An error occurred while adding the user to the whitelist.',
+                        content: 'Invalid list type.',
                         ephemeral: true
                     });
-                }
-                break;
-            /*
-                Redlist
-            */
-            case 'redlist':
-                // Add user to the redlist
-                try {
-                    // Check if the user is already redlisted
-                    if (redlistedUser) {
-                        return await interaction.reply({
-                            content: `<@${user.id}> is already in the redlist.`,
-                            ephemeral: true
-                        });
-                    }
-
-                    // Create a new user in the redlist
-                    const newUser = new Redlist({
-                        executedBy: {
-                            ID: interaction.user.id,
-                            Tag: interaction.user.tag
-
-                        },
-                        user: {
-                            ID: user.id,
-                            Tag: user.user.tag
-                        },
-                        reason: reason
-                    });
-                    await newUser.save();
-                    await interaction.reply({
-                        content: `<@${user.id}> has been added to the redlist. Reason: ${reason}`,
-                        ephemeral: true
-                    });
-                } catch (error) {
-                    console.error('Error adding user to redlist:', error);
-                    await interaction.reply({
-                        content: 'An error occurred while adding the user to the redlist.',
-                        ephemeral: true
-                    });
-                }
-                break;
-            default:
-                return await interaction.reply({
-                    content: 'Invalid list type.',
-                    ephemeral: true
-                });
-                break;
-        };
+            };
+        } catch (error) {
+            console.error('Error adding user to list:', error);
+            await interaction.reply({
+                content: `An error occurred while adding the user to the ${listType}`,
+                ephemeral: true
+            });
+        }
     },
 };
