@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionsBitField } = require('discord.js');
 const Blacklist = require('../../database/schema/Blacklist.model.js'),
     Whitelist = require('../../database/schema/Whitelist.model.js'),
     Redlist = require('../../database/schema/Redlist.model.js');
@@ -6,11 +6,11 @@ const Blacklist = require('../../database/schema/Blacklist.model.js'),
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('remove')
-        .setDescription('Remove a user from the choosen list')
-        .addStringOption(option =>
+        .setDescription('Remove a user from the chosen list in the current guild')
+        .addUserOption(option =>
             option
-                .setName('user-id')
-                .setDescription('The user to remove (provide user ID).')
+                .setName('user')
+                .setDescription('The user to remove from the list')
                 .setRequired(true)
         )
         .addStringOption(option =>
@@ -23,128 +23,72 @@ module.exports = {
                     { name: 'Redlist', value: 'redlist' },
                 )
                 .setRequired(true)
-        )
-        .addStringOption(option =>
-            option
-                .setName('reason')
-                .setDescription('Reason for blacklisting')
-                .setRequired(true)
         ),
     async execute(interaction) {
         // Check if the user executing the command is an administrator
-        if (!interaction.member.permissions.has("ADMINISTRATOR")) {
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return await interaction.reply({
                 content: 'You must be an administrator to use this command.',
                 ephemeral: true
             });
         }
 
-        // Get user and reason from command options
-        const user = interaction.options.getString('user-id'),
-            reason = interaction.options.getString('reason'),
+        // Get user and list type from command options
+        const user = interaction.options.getMember('user'),
             listType = interaction.options.getString('list');
 
-        const blacklistedUser = await Blacklist.findOne({ 'user.ID': user }),
-            whitelistedUser = await Whitelist.findOne({ 'user.ID': user }),
-            redlistedUser = await Redlist.findOne({ 'user.ID': user });
-
-
-        switch (listType) {
-            /*
-                Blacklist
-            */
-            case 'blacklist':
-                // Remove user from the blacklist
-                try {
-                    if (!blacklistedUser) {
-                        await interaction.reply({
-                            content: `The user you provided is not in the blacklist`,
-                            ephemeral: true
-                        });
-                    } else {
-                        await Blacklist.findOneAndDelete({
-                            'user.ID': user
-                        });
-
-                        await interaction.reply({
-                            content: `<@${user}> is removed from the blacklist`,
-                            files: ['src/yuhuh.gif'],
-                            ephemeral: true
-                        });
-
-                        await interaction.guild.bans.remove(user);
-                    }
-                } catch (error) {
-                    console.error('Error removing user from blacklist:', error);
-                    await interaction.reply({
-                        content: 'An error occurred while removing the user from the blacklist.',
+        try {
+            let model;
+            switch (listType) {
+                case 'blacklist':
+                    model = Blacklist;
+                    break;
+                case 'whitelist':
+                    model = Whitelist;
+                    break;
+                case 'redlist':
+                    model = Redlist;
+                    break;
+                default:
+                    return await interaction.reply({
+                        content: 'Invalid list type.',
                         ephemeral: true
                     });
-                }
-                break;
+            }
 
-            /*
-                Whitelist
-            */
-            case 'whitelist':
-                try {
-                    if (!whitelistedUser) {
-                        await interaction.reply({
-                            content: `The user you provided is not in the whitelist`,
-                            ephemeral: true
-                        });
-                    } else {
-                        await Whitelist.findOneAndDelete({
-                            'user.ID': user
-                        });
-                        
-                        await interaction.reply({
-                            content: `<@${user}> is removed from the whitelist`,
-                            ephemeral: true
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error removing user from whitelist:', error)
-                    await interaction.reply({
-                        content: 'An error occurred while removing the user from the whitelist',
-                        ephemeral: true
-                    });
-                }
-                break;
-            /*
-                Redlist
-            */
-            case 'redlist':
-                try {
-                    if (!redlistedUser) {
-                        await interaction.reply({
-                            content: `The user you provided is not in the redlist`,
-                            ephemeral: true
-                        });
-                    } else {
-                        await Redlist.findOneAndDelete({
-                            'user.ID': user
-                        });
-                        
-                        await interaction.reply({
-                            content: `<@${user}> is removed from the redlist`,
-                            ephemeral: true
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error removing user from redlist:', error)
-                    await interaction.reply({
-                        content: 'An error occurred while removing the user from the redlist',
-                        ephemeral: true
-                    });
-                }
-                break;
-            default:
+            // Find the user in the corresponding list
+            const userDocument = await model.findOne({ userID: user.id });
+            if (!userDocument) {
                 return await interaction.reply({
-                    content: 'Invalid list type.',
+                    content: `<@${user.id}> is not in the ${listType}.`,
                     ephemeral: true
                 });
-                break;
-        };
+            }
+
+            // Remove the current guild's ID from the user's guilds array
+            const guildIndex = userDocument.guilds.findIndex(guild => guild.ID === interaction.guild.id);
+            if (guildIndex !== -1) {
+                userDocument.guilds.splice(guildIndex, 1);
+            }
+            
+            // If there are no more guilds associated with the user, completely remove the user from the database
+            if (userDocument.guilds.length === 0) {
+                await model.findOneAndDelete({ userID: user.id });
+            } else {
+                // Save the updated user document back to the database
+                await userDocument.save();
+            }
+
+            return await interaction.reply({
+                content: `<@${user.id}> has been removed from the ${listType} in this guild.`,
+                ephemeral: true
+            });
+        } catch (error) {
+            console.error('Error removing user from list:', error);
+            return await interaction.reply({
+                content: `An error occurred while removing the user from the ${listType}.`,
+                ephemeral: true
+            });
+        }
     },
 };
