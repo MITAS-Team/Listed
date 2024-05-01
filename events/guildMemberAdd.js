@@ -6,7 +6,7 @@ module.exports = {
     async execute(member) {
         try {
             // Find the blacklisted user by their ID
-            const blacklistedUser = await blacklist.findOne({ 'user.ID': member.id });
+            const blacklistedUser = await blacklist.findOne({ userID: member.id });
 
             // If the user is blacklisted, kick them from the server
             if (blacklistedUser) {

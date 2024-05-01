@@ -20,7 +20,7 @@ module.exports = {
 				in the log channel of the guild
 			*/
             const userID = interaction.user.id;
-            const redlistedUser = await Redlist.findOne({ 'user.ID': userID });
+            const redlistedUser = await Redlist.findOne({ userID: userID });
             if (redlistedUser) {
                 const guildSettings = await Guilds.findOne({ ID: interaction.guild.id });
                 if (guildSettings && guildSettings.Settings.Logs) {
