@@ -24,6 +24,21 @@ const Blacklist = new Schema({
         }
     
     },
+    guilds: [
+        {
+            ID: {
+                // Guild ID
+                type: String,
+                required: true,
+                unique: true
+            },
+            reason: {
+                // Reason for redlisting the user in this guild
+                type: String,
+                required: true
+            }
+        }
+    ],
     reason: {
         type: String,
         required: true
