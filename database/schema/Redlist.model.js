@@ -1,32 +1,11 @@
 const { Schema, model } = require("mongoose");
 
 const Redlist = new Schema({
-    executedBy: {
-        ID: {
-            // Id of the user who redlisted
-            type: String,
-            required: true,
-            unique: false
-        },
-        Tag: {
-            // Tag of the user who redlisted
-            type: String,
-            required: true
-        }
-    },
-    user: {
-        ID: {
-            // User ID
-            type: String,
-            required: true,
-            unique: false
-        },
-        Tag: {
-            // User Tag
-            type: String,
-            required: true
-        }
-    
+    userID: {
+        // User ID
+        type: String,
+        required: true,
+        unique: false 
     },
     guilds: [
         {
@@ -39,7 +18,13 @@ const Redlist = new Schema({
             reason: {
                 // Reason for redlisting the user in this guild
                 type: String,
-                required: true
+                required: true,
+                 unique: false
+            },
+            executedBy: {
+                type: String,
+                required: true,
+                 unique: false
             }
         }
     ],
