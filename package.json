@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "main": "client.js",
   "scripts": {
-    "test": "node client.js",
     "start": "node client.js",
     "dev": "npx nodemon client.js"
   },
